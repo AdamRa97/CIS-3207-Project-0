@@ -38,12 +38,12 @@ void *getDir(char *dir){
 
         // Making sure that the directories even exist
         if( currWorkDir == NULL ){
-            printf("Directory does not exist");
+            printf("tuls: cannot open directory\n");
             exit(1);
         }
 
         if (token == NULL) {
-            printf("Directory does not exist");
+            printf("tuls: cannot open directory\n");
             exit(1);
         }
 
@@ -77,12 +77,12 @@ void *getDir(char *dir){
 
         // Checking if given argument directory exists
         if(newDir == NULL){
-            printf("Directory does not exist");
+            printf("tuls: cannot open directory\n");
             exit(1);
         }
 
         if (token == NULL) {
-            printf("Directory does not exist");
+            printf("tuls: cannot open directory\n");
             exit(1);
         }
 

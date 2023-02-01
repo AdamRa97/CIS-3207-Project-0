@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <limits.h>
 #include <string.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <unistd.h>
 
-void *getDir(char *newDir);
+void getDir(char *cwd, const int num);
 
 int main(int argc, char *argv[]){
+    char path[100];
 
     // Checking arguments first to make sure there are no argument errors
     if (argc > 2){
@@ -16,102 +17,58 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    getDir(argv[1]);
-    
-    return(0);
+    // Making it so that the given arguments or none are able to be passed through the function with no issues
+    if (argv[1] == NULL)
+        strcpy(path,".");
+    else
+        strcpy(path,argv[1]);
+
+    getDir(path, 0);
+
+    return 0;
 }
 
 
-// Function that finds current working directory and other directories
-void *getDir(char *dir){
-    char *currWorkDir, *token, *newDir;
+void getDir(char *cwd, const int num){
+    int i;
+    char path[1000];
+    char *currWorkDir, *token;
     char buffer[PATH_MAX + 1];
-    char *directory;
-    size_t length;
+    struct dirent *nameList;
+    DIR *dir = opendir(cwd);
+    
+    if (!dir)
+        return;
 
-    // Checking if user entered in argument or not; also acts as base case for recursion
-    if (dir == NULL){
-
+    // Adding in title of directory to have better idea of what the root is
+    if ((strcmp(cwd,".")) == 0){
         // Getting current directory path and then shortening it to single directory (e.g blah/blah/blah/cwd -> cwd)
         currWorkDir = getcwd(buffer, PATH_MAX + 1 );
         token = strrchr(currWorkDir, '/');
-
-        // Making sure that the directories even exist
-        if( currWorkDir == NULL ){
-            printf("tuls: cannot open directory\n");
-            exit(1);
-        }
-
-        if (token == NULL) {
-            printf("tuls: cannot open directory\n");
-            exit(1);
-        }
-
-        length = strlen(token);
-        directory = malloc(length);
-        memcpy(directory, token+1, length);
-
-        // Checking current directory number of files / folders
-        struct dirent **namelist;
-        int n;
-        n = scandir(".",&namelist,NULL,alphasort);
-
-        // Printing out the directory and freeing up the memory
-        char *dir = directory;
-        printf("[[%s]]\n",dir);
-        free(dir);
-
-        // Printing out the files / folders while freing up memory and checks for any errors
-        if (n == -1){
-            perror("scandir");
-            exit(EXIT_FAILURE);
-        }
-        while (n--){
-            printf("    -> %s\n", namelist[n]->d_name);
-            free(namelist[n]);
-        }
+        printf("[[%s]]\n",token);
     }
     else{
-        newDir = dir;
-        token = newDir;
-
-        // Checking if given argument directory exists
-        if(newDir == NULL){
-            printf("tuls: cannot open directory\n");
-            exit(1);
-        }
-
-        if (token == NULL) {
-            printf("tuls: cannot open directory\n");
-            exit(1);
-        }
-
-        length = strlen(token);
-        directory = malloc(length);
-        memcpy(directory, token, length);
-
-        // Checking current directory number of files / folders
-        struct dirent **namelist;
-        int n;
-        n = scandir(token,&namelist,NULL,alphasort);
-
-        // Printing out the directory
-        char *dir = directory;
-        printf("[[%s]]\n",dir);
-        free(dir);
-
-        // Printing out the files / folders while freeing up memory and checks for any errors
-        if (n == -1){
-            perror("scandir");
-            exit(EXIT_FAILURE);
-        }
-        while (n--){
-            printf("    -> %s\n", namelist[n]->d_name);
-            free(namelist[n]);
-        }
-
-        // recursion
-        return getDir(NULL);
+        currWorkDir = cwd;
+        printf("[[%s]]\n",currWorkDir);
     }
-    return 0;
+
+    while ((nameList = readdir(dir)) != NULL){
+        if (strcmp(nameList->d_name, ".") != 0 && strcmp(nameList->d_name, "..") != 0){
+            for (i = 0; i < num; i++) {
+                if (i % 2 == 0 || i == 0)
+                    printf("|");
+                else
+                    printf(" ");
+            }
+
+            printf("| -> %s\n", nameList->d_name);
+
+            strcpy(path, cwd);
+            strcat(path, "/");
+            strcat(path, nameList->d_name);
+            getDir(path, num + 2);
+        }
+    }
+
+    closedir(dir);
 }

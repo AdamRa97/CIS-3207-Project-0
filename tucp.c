@@ -9,11 +9,6 @@
 #define BUF_SIZE 1024
 
 int main(int argc, char *argv[]){
-    // struct stat test_stat;
-    // stat(argv[1], &test_stat);
-    // int testCheck = S_ISREG(test_stat.st_mode);
-    // printf("%d", testCheck);
-
     FILE *src, *dst;
     size_t in, out;
     char buf[BUF_SIZE];
@@ -28,7 +23,6 @@ int main(int argc, char *argv[]){
     // Storing the value of whether destination is file or folder
     stat(argv[argc-1],&dst_stat);
     dstCheck = S_ISREG(dst_stat.st_mode);
-
 
     // To loop through each source
     for (int i = 1; i < argc-1; i++){

@@ -1,55 +1,96 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+#include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 #define BUF_SIZE 1024
 
 int main(int argc, char *argv[]){
-    
+    // struct stat test_stat;
+    // stat(argv[1], &test_stat);
+    // int testCheck = S_ISREG(test_stat.st_mode);
+    // printf("%d", testCheck);
+
     FILE *src, *dst;
     size_t in, out;
     char buf[BUF_SIZE];
-    int bufsize = 1024;
-    int count = 0;
-    
-    printf("size of argv[] : %d\n", argc);
-    printf("arg[-1] : %s\n", argv[argc-1]);
+    struct stat path_stat;
+    struct stat dst_stat;
+    int checkFile,dstCheck;
 
+    // To check first if there are any errors with the arguments
+    if (argc < 3)
+        fprintf(stderr, "Expected more arguments or folder error");
+
+    // Storing the value of whether destination is file or folder
+    stat(argv[argc-1],&dst_stat);
+    dstCheck = S_ISREG(dst_stat.st_mode);
+
+
+    // To loop through each source
     for (int i = 1; i < argc-1; i++){
+        // Checking if the sources are directories error
+        stat(argv[i],&path_stat);
+        checkFile = S_ISREG(path_stat.st_mode);
 
-        printf("source opening %s\n",argv[i]);
+        if (checkFile == 0){
+            fprintf(stderr, "Source can't be a directory");
+            exit(1);
+        }
+
         src = fopen(argv[i], "r");
-        if (src == NULL){
-            printf("the src is null");
+        if (src == NULL)
             exit(2);
-        }
-        printf("arg[%d]: %s\n", i,argv[i]);
 
-        dst = fopen(argv[argc-1], "w");
-        printf("dst: %s\n",argv[argc-1]);
-
-        if (dst < 0){
-            printf("dst is less than 0");
-            // exit is placeholder for now, need to make directory instead later on
-            exit(3);
-        }
-
-        while (1){
-            count++;
-            printf("count = %d\n",count);
-            printf("this is being called from the While Loop\n");
-            in = fread(buf, 1, bufsize, src);
-            // printf("in == %zu\n", in);
-            if (0 == in){
-                printf("in == 0");
+        // Checking if the destination is a file or folder
+        if ((dstCheck == 0) && ((access(argv[argc-1],F_OK)) == 0)){
+            // To concatenate file name and destination path
+            if (strcmp(argv[argc-1],"..")== 0)
                 break;
-            }
-            out = fwrite(buf, 1, in, dst);
-            if (0 == out){
-                printf("out == 0");
-                break;
-            }
-        }
+            char *a = argv[i];
+            char *b = argv[argc-1];
+            char *c = malloc(strlen(a)+strlen(b)+1);
+            strcpy(c,b);
+            strcat(c,a);
 
+            dst = fopen(c, "w");
+
+            if ((dst < 0) || (dst == NULL)){
+                fprintf(stderr, "Directory doesn't exist");
+                exit(3);
+            }
+
+            while (1){
+                in = fread(buf, 1, 1, src);
+                if (in == 0)
+                    break;
+                out = fwrite(buf, 1, in, dst);
+                if (out == 0)
+                    break;
+            }
+            free(c);
+        }
+        else{
+            dst = fopen(argv[argc-1], "w");
+
+            if ((dst < 0) || (dst == NULL)){
+                fprintf(stderr, "Directory doesn't exist");
+                exit(3);
+            }
+
+            while (1){
+                in = fread(buf, 1, 1, src);
+                if (in == 0)
+                    break;
+                out = fwrite(buf, 1, in, dst);
+                if (out == 0)
+                    break;
+            }
+
+        }
         fclose(src);
         fclose(dst);
     }
